@@ -1,4 +1,5 @@
 from cryptography.fernet import Fernet
+import time
 
 # def create_key():
 #     key = Fernet.generate_key()
@@ -8,7 +9,7 @@ from cryptography.fernet import Fernet
 def get_path():
     # print('Please type path to file: ')
     # path = input('-->')
-    path = 'test.txt'
+    path = "dunkfile.png"
     return path
 
 def read_key():
@@ -16,9 +17,6 @@ def read_key():
     key = file.read()
     file.close
     return key
-
-key = read_key()
-fer = Fernet(key)
 
 def read_file(path):
     file = open(path, 'rb')
@@ -41,11 +39,18 @@ def decrypt_file(file_bytes, path):
     file.close()
 
 def main():
+    start = time.time()
     path = get_path()
     file_bytes = read_file(path) 
     read_key()
     read_file(path)
     # encrypt_file(file_bytes, path)
     decrypt_file(file_bytes, path)
+    end = time.time()
 
-main()
+    print(round(end - start, 2), "sec")
+
+if __name__ == "__main__":
+    key = read_key()
+    fer = Fernet(key)
+    main()
