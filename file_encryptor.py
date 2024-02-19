@@ -39,7 +39,7 @@ class File_encryptor(ttk.Frame):
     def function_button(self):
         global encrypt_bttn, decrypt_bttn
         encrypt_bttn = ttk.Button(self, text='Encrypt files', command=lambda: [self.create_key(), self.encrypt_file()]) # button
-        decrypt_bttn = ttk.Button(self, text='Decrypt files') # button
+        decrypt_bttn = ttk.Button(self, text='Decrypt files', command=lambda: [self.decrypt_file()]) # button
         encrypt_bttn.grid(row=5, column=0, sticky='', columnspan=2) # grid button
         decrypt_bttn.grid(row=5, column=2, sticky='', columnspan=2) # grid button
 
@@ -122,9 +122,16 @@ class File_encryptor(ttk.Frame):
             file = open(filename, 'wb')
             file.write(encrypted_data)
             file.close()
-            print(encrypted_data)
 
-    def decrypt_file():
-        pass
+    def decrypt_file(self):
+        for filename in self.filenames:
+            file = open(filename, 'rb')
+            file_bytes = file.read()
+            file.close
+            print(filename)
+            encrypted_data = self.fer.decrypt(file_bytes)
+            file = open(filename, 'wb')
+            file.write(encrypted_data)
+            file.close()
 
 App()
