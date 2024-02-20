@@ -32,12 +32,12 @@ class File_encryptor(ttk.Frame):
         title_label = ttk.Label(self, text='File encryptor', font='arial 30') # title label
         open_bttn = ttk.Button(self, text='Open file', command=lambda: [self.get_files(), self.scrollbar(), self.function_button()]) # button
         key_bttn = ttk.Button(self, text='Open Key', command=lambda: [self.key_button()]) # button
-        self.key_label = ttk.Label(self, text=f'Your key: {self.key}') # key label
+        self.key_label = ttk.Label(self, text=f'{self.key}') # key label
 
         open_bttn.grid(row=1, column=0, sticky='ewn', columnspan=2, padx=10) # grid button
         key_bttn.grid(row=1, column=2, sticky='ewn', columnspan=2, padx=10) # grid button
         title_label.grid(row=0, column=0, sticky='', columnspan=4) # grid title
-        self.key_label.grid(row=7, column=0, sticky='w', rowspan=7) # grid key
+        self.key_label.grid(row=7, column=0, sticky='w', columnspan=4) # grid key
         
 
     def function_button(self):
@@ -89,20 +89,20 @@ class File_encryptor(ttk.Frame):
             scrollbar_text.insert('end', f'{filename}\n')
 
     def create_key(self):
-        key_name = 'key_gui.key'
+        self.key_name = 'key_gui.key'
         current_dir = os.getcwd()
-        if not os.path.exists(key_name):
+        if not os.path.exists(self.key_name):
             self.key = Fernet.generate_key()
-            with open(key_name, "wb") as key_file:
+            with open(self.key_name, "wb") as key_file:
                 key_file.write(self.key)
             self.fer = Fernet(self.key)
-            self.key_location = current_dir + key_name
+            self.key_location = current_dir + self.key_name
             print(f'your key is: {self.key}\nKey location: {self.key_location}')
             self.update_key_label()
 
         else:
             print('you already created key!, check your directory')
-            file = open(key_name, "rb")
+            file = open(self.key_name, "rb")
             self.key = file.read()
             self.fer = Fernet(self.key)
             print(f'Your key is loaded!\nKey: {self.key}')
@@ -111,12 +111,12 @@ class File_encryptor(ttk.Frame):
 
     def select_key(self):
         current_dir = os.getcwd()
-        key = filedialog.askopenfilenames(
+        self.key_name = filedialog.askopenfilenames(
             title='Open a file',
             initialdir=current_dir,
             filetypes=(('.key', '.key'),))
-        key = ''.join(key)        
-        file = open(key, "rb")
+        self.key_name = ''.join(self.key_name)        
+        file = open(self.key_name, "rb")
         self.key = file.read()
         self.fer = Fernet(self.key)
         print(f'Your key is loaded!\nKey: {self.key}')
@@ -124,7 +124,9 @@ class File_encryptor(ttk.Frame):
 
 
     def update_key_label(self):
-        self.key_label.config(text = f'Your key: {self.key}')
+        short_key = self.key_name.split('/')
+        short_key = short_key[-1]
+        self.key_label.config(text = f'Your key: {short_key}')
             
 
     def encrypt_file(self):
