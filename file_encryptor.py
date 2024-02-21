@@ -127,7 +127,46 @@ class File_encryptor(ttk.Frame):
         short_key = self.key_name.split('/')
         short_key = short_key[-1]
         self.key_label.config(text = f'Your key: {short_key}')
+
+    def mark_name(self):
+        mark = 'ENC_'
+        for filename in self.filenames:
+            file_path = os.path.dirname(filename)
+            short_name = filename.split('/')
+            short_name = short_name[-1]
+            mark_name = str(file_path + '/' + mark + short_name)
+            os.rename(filename, mark_name)
+
+    def mark_tag(self):
+        file_message = 'ENCRYPTED'
+        for filename in self.filenames:
+            file = open(filename, 'a')
+            file.write(f'\n{file_message}\n')
+            file.close
+
+
+    def unmark_name(self):
+        for filename in self.filenames:
             
+            file_path = os.path.dirname(filename)
+            short_name = filename.split('/')
+            short_name = short_name[-1]
+            short_name = short_name.split('ENC_', 1)
+            print(short_name)
+            unmark_name = str(file_path + '/' + short_name[1])
+            os.rename(filename, unmark_name)
+
+    def unmark_tag(self):
+        for filename in self.filenames:
+            with open(filename, 'r+') as fp:
+                lines = fp.readlines()
+                fp.seek(0)
+                fp.truncate()
+                fp.writelines(lines[:-1])
+
+    def name_checker(self):
+        pass
+    
 
     def encrypt_file(self):
         start = time.time()
@@ -141,22 +180,26 @@ class File_encryptor(ttk.Frame):
             file = open(filename, 'wb')
             file.write(encrypted_data)
             file.close()
+        self.mark_tag()
+        self.mark_name()
         end = time.time()
         print(round(end - start, 2), "sec")
 
+
     def decrypt_file(self):
         start = time.time()
+        self.unmark_tag()
         print(f'encrypt key --> {self.key}')
         for filename in self.filenames:
             file = open(filename, 'rb')
             file_bytes = file.read()
-
             file.close
             print(filename)
             encrypted_data = self.fer.decrypt(file_bytes)
             file = open(filename, 'wb')
             file.write(encrypted_data)
             file.close()
+        self.unmark_name()
         end = time.time()
         print(round(end - start, 2), "sec")
 
