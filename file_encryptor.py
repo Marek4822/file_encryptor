@@ -22,6 +22,7 @@ class File_encryptor(ttk.Frame):
         super().__init__(master, padding=(10, 10))
         self.place(x=0, y=0, relwidth=1, relheight=1)
         self.key = ''
+        self.function_ui = False
         self.widgets()
         
 
@@ -41,14 +42,14 @@ class File_encryptor(ttk.Frame):
         
 
     def function_button(self):
-        global encrypt_bttn, decrypt_bttn, checkbox
-        encrypt_bttn = ttk.Button(self, text='Encrypt files', command=lambda: [self.encrypt_file()]) # button
-        decrypt_bttn = ttk.Button(self, text='Decrypt files', command=lambda: [self.decrypt_file()]) # button
+        self.function_ui = True
+        self.encrypt_bttn = ttk.Button(self, text='Encrypt files', command=lambda: [self.encrypt_file()]) # button
+        self.decrypt_bttn = ttk.Button(self, text='Decrypt files', command=lambda: [self.decrypt_file()]) # button
         self.checkbox_var = ttk.IntVar()
-        checkbox = ttk.Checkbutton(self, text='Do you want to encrypt name to?',variable=self.checkbox_var , onvalue=1, offvalue=0, command=self.checker) # checkbox
-        encrypt_bttn.grid(row=6, column=0, sticky='ewn', columnspan=2, padx=10) # grid button
-        decrypt_bttn.grid(row=6, column=2, sticky='ewn', columnspan=2, padx=10) # grid button
-        checkbox.grid(row=5, column=0, sticky='w', columnspan=4) # grid checkbox
+        self.checkbox = ttk.Checkbutton(self, text='Do you want to encrypt name to?',variable=self.checkbox_var , onvalue=1, offvalue=0, command=self.checker) # checkbox
+        self.encrypt_bttn.grid(row=6, column=0, sticky='ewn', columnspan=2, padx=10) # grid button
+        self.decrypt_bttn.grid(row=6, column=2, sticky='ewn', columnspan=2, padx=10) # grid button
+        self.checkbox.grid(row=5, column=0, sticky='w', columnspan=4) # grid checkbox
 
 
     def checker(self):
@@ -61,12 +62,17 @@ class File_encryptor(ttk.Frame):
 
 
     def key_button(self):
+        print(self.function_ui)
+        if self.function_ui:
+            self.destroy_function_button()
         create_key_bttn = ttk.Button(self, text='Create key', command=lambda: [self.create_key()]) # button
         select_key_bttn = ttk.Button(self, text='Select key', command=lambda: [self.select_key()]) # button
         create_key_bttn.grid(row=2, column=0, sticky='new', columnspan=2, padx=10) # grid button
         select_key_bttn.grid(row=2, column=2, sticky='new', columnspan=2, padx=10) # grid button
 
-        elements = scrollbar_text, scrollbar, encrypt_bttn, decrypt_bttn, checkbox
+
+    def destroy_function_button(self):
+        elements = self.scrollbar_text, self.scrollbar_ui, self.encrypt_bttn, self.decrypt_bttn, self.checkbox
         for element in elements:
             element.destroy()
 
@@ -77,16 +83,14 @@ class File_encryptor(ttk.Frame):
             filetypes=(('All files', '*'),))
         
     def scrollbar(self):
-        global scrollbar_text, scrollbar
-        scrollbar_text = ttk.Text(self, height=10)
-        scrollbar_text.grid(row=2, column=0, sticky='nes', columnspan=4, rowspan=3)
-
-        scrollbar = ttk.Scrollbar(self, orient='vertical', command=scrollbar_text.yview)
-        scrollbar.grid(row=2, column=2, sticky='nes', columnspan=4, rowspan=3)
-        scrollbar_text.config(yscrollcommand=scrollbar.set)
+        self.scrollbar_text = ttk.Text(self, height=10)
+        self.scrollbar_text.grid(row=2, column=0, sticky='nes', columnspan=4, rowspan=3)
+        self.scrollbar_ui = ttk.Scrollbar(self, orient='vertical', command=self.scrollbar_text.yview)
+        self.scrollbar_ui.grid(row=2, column=2, sticky='nes', columnspan=4, rowspan=3)
+        self.scrollbar_text.config(yscrollcommand=self.scrollbar_ui.set)
 
         for filename in self.filenames:
-            scrollbar_text.insert('end', f'{filename}\n')
+            self.scrollbar_text.insert('end', f'{filename}\n')
 
     def create_key(self):
         self.key_name = 'key_gui.key'
@@ -144,10 +148,8 @@ class File_encryptor(ttk.Frame):
             file.write(f'\n{file_message}\n')
             file.close
 
-
     def unmark_name(self):
         for filename in self.filenames:
-            
             file_path = os.path.dirname(filename)
             short_name = filename.split('/')
             short_name = short_name[-1]
@@ -185,7 +187,7 @@ class File_encryptor(ttk.Frame):
         end = time.time()
         print(round(end - start, 2), "sec")
 
-
+ 
     def decrypt_file(self):
         start = time.time()
         self.unmark_tag()
