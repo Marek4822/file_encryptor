@@ -23,6 +23,7 @@ class File_encryptor(ttk.Frame):
         self.place(x=0, y=0, relwidth=1, relheight=1)
         self.key = ''
         self.function_ui = False
+        self.function_ui_key = False
         self.widgets()
         
 
@@ -31,7 +32,7 @@ class File_encryptor(ttk.Frame):
         self.rowconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1, uniform='a')
         
         title_label = ttk.Label(self, text='File encryptor', font='arial 30') # title label
-        open_bttn = ttk.Button(self, text='Open file', command=lambda: [self.get_files(), self.scrollbar(), self.function_button()]) # button
+        open_bttn = ttk.Button(self, text='Open file', command=lambda: [self.handle_open_files()]) # button
         key_bttn = ttk.Button(self, text='Open Key', command=lambda: [self.key_button()]) # button
         self.key_label = ttk.Label(self, text=f'{self.key}') # key label
 
@@ -64,14 +65,15 @@ class File_encryptor(ttk.Frame):
     def key_button(self):
         print(self.function_ui)
         if self.function_ui:
-            self.destroy_function_button()
-        create_key_bttn = ttk.Button(self, text='Create key', command=lambda: [self.create_key()]) # button
-        select_key_bttn = ttk.Button(self, text='Select key', command=lambda: [self.select_key()]) # button
-        create_key_bttn.grid(row=2, column=0, sticky='new', columnspan=2, padx=10) # grid button
-        select_key_bttn.grid(row=2, column=2, sticky='new', columnspan=2, padx=10) # grid button
+            self.destroy_function_buttons()
+        self.function_ui_key = True
+        self.create_key_bttn = ttk.Button(self, text='Create key', command=lambda: [self.create_key()]) # button
+        self.select_key_bttn = ttk.Button(self, text='Select key', command=lambda: [self.select_key()]) # button
+        self.create_key_bttn.grid(row=2, column=0, sticky='new', columnspan=2, padx=10) # grid button
+        self.select_key_bttn.grid(row=2, column=2, sticky='new', columnspan=2, padx=10) # grid button
 
 
-    def destroy_function_button(self):
+    def destroy_function_buttons(self):
         elements = self.scrollbar_text, self.scrollbar_ui, self.encrypt_bttn, self.decrypt_bttn, self.checkbox
         for element in elements:
             element.destroy()
@@ -81,6 +83,24 @@ class File_encryptor(ttk.Frame):
             title='Open a file',
             initialdir='/',
             filetypes=(('All files', '*'),))
+
+
+    def handle_open_files(self):
+        if self.function_ui_key:
+            self.destroy_key_buttons()
+        self.get_files()
+        if self.filenames:
+            pass
+        else:
+            raise Exception('no files selected')
+        self.scrollbar()
+        self.function_button()
+
+    def destroy_key_buttons(self):
+        elements = self.create_key_bttn, self.select_key_bttn
+        for element in elements:
+            element.destroy()
+        
         
     def scrollbar(self):
         self.scrollbar_text = ttk.Text(self, height=10)
@@ -141,12 +161,16 @@ class File_encryptor(ttk.Frame):
             mark_name = str(file_path + '/' + mark + short_name)
             os.rename(filename, mark_name)
 
-    def mark_tag(self):
-        file_message = 'ENCRYPTED'
+
+    def tag(self):
+        # self.tag_message = 'ENCRYPTED'
         for filename in self.filenames:
-            file = open(filename, 'a')
-            file.write(f'\n{file_message}\n')
+            file = open(filename, 'r+')
+            file_data = file.read() 
+            file.seek(0, 0)
+            file.write(self.tag_message + '\n' + file_data)
             file.close
+
 
     def unmark_name(self):
         for filename in self.filenames:
@@ -158,20 +182,38 @@ class File_encryptor(ttk.Frame):
             unmark_name = str(file_path + '/' + short_name[1])
             os.rename(filename, unmark_name)
 
-    def unmark_tag(self):
+    def untag(self):
         for filename in self.filenames:
-            with open(filename, 'r+') as fp:
-                lines = fp.readlines()
-                fp.seek(0)
-                fp.truncate()
-                fp.writelines(lines[:-1])
+            file =  open(filename, 'r+')
+            lines = file.readlines()
+            file.seek(0)
+            file.truncate()
+            file.writelines(lines[1:])
 
-    def name_checker(self):
-        pass
+
+    def tag_checker(self):
+        for filename in self.filenames:
+            file = open(filename, 'r')
+            first_line = file.readline().strip() # todo add to read binary
+            if first_line == self.tag_message:
+                raise Exception("File is already encrypted!")
+            else:
+                continue
+
+    def untag_checker(self):
+        for filename in self.filenames:
+            file = open(filename, 'r')
+            first_line = file.readline().strip()
+            if first_line == self.tag_message:
+                continue
+            else:
+                raise Exception("File is not encrypted!")
+
     
-
     def encrypt_file(self):
         start = time.time()
+        self.tag_message = 'ENCRYPTED' # todo tag_massage based on key
+        self.tag_checker()
         print(f'encrypt key --> {self.key}')
         for filename in self.filenames:
             file = open(filename, 'rb')
@@ -182,15 +224,17 @@ class File_encryptor(ttk.Frame):
             file = open(filename, 'wb')
             file.write(encrypted_data)
             file.close()
-        self.mark_tag()
-        self.mark_name()
+        self.tag()
+        # self.mark_name()
         end = time.time()
         print(round(end - start, 2), "sec")
 
  
     def decrypt_file(self):
         start = time.time()
-        self.unmark_tag()
+        self.tag_message = 'ENCRYPTED' # todo tag_massage based on key
+        self.untag_checker()
+        self.untag()
         print(f'encrypt key --> {self.key}')
         for filename in self.filenames:
             file = open(filename, 'rb')
@@ -201,8 +245,7 @@ class File_encryptor(ttk.Frame):
             file = open(filename, 'wb')
             file.write(encrypted_data)
             file.close()
-        self.unmark_name()
+        # self.unmark_name()
         end = time.time()
         print(round(end - start, 2), "sec")
-
 App()
