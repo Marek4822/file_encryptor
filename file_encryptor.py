@@ -9,7 +9,7 @@ class App():
         super().__init__()
         self = ttk.Window(
             title='File encryptor',
-            size=(350, 500),
+            size=(400, 500),
             themename='darkly',
             # resizable=(False, False)
         )
@@ -24,6 +24,7 @@ class File_encryptor(ttk.Frame):
         self.key = ''
         self.function_ui = False
         self.function_ui_key = False
+        self.is_checked = False
         self.tag_encrypted = 'ENCRYPTED'
         self.widgets()
         
@@ -32,7 +33,7 @@ class File_encryptor(ttk.Frame):
         self.columnconfigure((0, 1, 2, 3), weight=1, uniform='a')
         self.rowconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1, uniform='a')
         
-        title_label = ttk.Label(self, text='File encryptor', font='arial 30') # title label
+        title_label = ttk.Label(self, text='ENCRYPTOR', font='arial 30') # title label
         open_bttn = ttk.Button(self, text='Open file', command=lambda: [self.handle_open_files()]) # button
         key_bttn = ttk.Button(self, text='Open Key', command=lambda: [self.key_button()]) # button
         self.key_label = ttk.Label(self, text=f'{self.key}') # key label
@@ -48,7 +49,8 @@ class File_encryptor(ttk.Frame):
         self.encrypt_bttn = ttk.Button(self, text='Encrypt files', command=lambda: [self.encrypt_file()]) # button
         self.decrypt_bttn = ttk.Button(self, text='Decrypt files', command=lambda: [self.decrypt_file()]) # button
         self.checkbox_var = ttk.IntVar()
-        self.checkbox = ttk.Checkbutton(self, text='Do you want to encrypt name to?',variable=self.checkbox_var , onvalue=1, offvalue=0, command=self.checker) # checkbox
+        self.checkbox = ttk.Checkbutton(self, text='Do you want to encrypt/decrypt name?',variable=self.checkbox_var , onvalue=1, offvalue=0, command=self.checker) # checkbox
+
         self.encrypt_bttn.grid(row=6, column=0, sticky='ewn', columnspan=2, padx=10) # grid button
         self.decrypt_bttn.grid(row=6, column=2, sticky='ewn', columnspan=2, padx=10) # grid button
         self.checkbox.grid(row=5, column=0, sticky='w', columnspan=4) # grid checkbox
@@ -56,11 +58,11 @@ class File_encryptor(ttk.Frame):
 
     def checker(self):
         if self.checkbox_var.get() == 1:
-            # self.key_label.config(text="Checked!")
-            print('you clicked checkbox!')
+            self.is_checked = True
+            print(f'you clicked checkbox! {self.is_checked}')
         else:
-            # self.key_label.config(text="Unchecked!")
-            print('you unclicked checkbox!')
+            self.is_checked = False
+            print(f'you clicked checkbox! {self.is_checked}')
 
 
     def key_button(self):
@@ -153,14 +155,15 @@ class File_encryptor(ttk.Frame):
         short_key = short_key[-1]
         self.key_label.config(text = f'Your key: {short_key}')
 
-    def mark_name(self):
-        mark = 'ENC_'
+    def encrypt_name(self):
         for filename in self.filenames:
             file_path = os.path.dirname(filename)
             short_name = filename.split('/')
             short_name = short_name[-1]
-            mark_name = str(file_path + '/' + mark + short_name)
-            os.rename(filename, mark_name)
+            encrypt_name = self.fer.encrypt(short_name.encode()).decode()
+            encrypt_name = str(f"{file_path}/{encrypt_name}")
+            os.rename(filename, encrypt_name)
+            print(encrypt_name)
 
     def create_tag(self):
         self.tag_code = ''
@@ -176,23 +179,23 @@ class File_encryptor(ttk.Frame):
             file = open(filename, 'r+')
             file_data = file.read() 
             file.seek(0, 0)
-            file.write(f"ENCRYPTED\n{self.tag_code}\n{file_data}")
+            file.write(f"{self.tag_encrypted}\n{self.tag_code}\n{file_data}")
             file.close
 
 
-    def unmark_name(self):
+    def decrypt_name(self):
         for filename in self.filenames:
             file_path = os.path.dirname(filename)
             short_name = filename.split('/')
             short_name = short_name[-1]
-            short_name = short_name.split('ENC_', 1)
-            print(short_name)
-            unmark_name = str(file_path + '/' + short_name[1])
-            os.rename(filename, unmark_name)
+            encrypt_name = self.fer.decrypt(short_name.encode()).decode()
+            encrypt_name = str(f"{file_path}/{encrypt_name}")
+            os.rename(filename, encrypt_name)
+            print(encrypt_name)
 
     def untag(self):
         for filename in self.filenames:
-            file =  open(filename, 'rb+')
+            file = open(filename, 'rb+')
             lines = file.readlines()
             file.seek(0)
             file.truncate()
@@ -249,7 +252,8 @@ class File_encryptor(ttk.Frame):
             file.write(encrypted_data)
             file.close()
         self.tag()
-        # self.mark_name()
+        if self.is_checked:
+            self.encrypt_name()
         end = time.time()
         print(round(end - start, 2), "sec")
 
@@ -268,7 +272,8 @@ class File_encryptor(ttk.Frame):
             file = open(filename, 'wb')
             file.write(encrypted_data)
             file.close()
-        # self.unmark_name()
+        if self.is_checked:
+            self.decrypt_name()
         end = time.time()
         print(round(end - start, 2), "sec")
 App()
