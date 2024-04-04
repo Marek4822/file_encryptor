@@ -24,6 +24,7 @@ class File_encryptor(ttk.Frame):
         self.key = ''
         self.function_ui = False
         self.function_ui_key = False
+        self.tag_encrypted = 'ENCRYPTED'
         self.widgets()
         
 
@@ -123,7 +124,6 @@ class File_encryptor(ttk.Frame):
             self.key_location = current_dir + self.key_name
             print(f'your key is: {self.key}\nKey location: {self.key_location}')
             self.update_key_label()
-
         else:
             print('you already created key!, check your directory')
             file = open(self.key_name, "rb")
@@ -131,6 +131,7 @@ class File_encryptor(ttk.Frame):
             self.fer = Fernet(self.key)
             print(f'Your key is loaded!\nKey: {self.key}')
             self.update_key_label()
+        self.create_tag()
 
 
     def select_key(self):
@@ -145,7 +146,7 @@ class File_encryptor(ttk.Frame):
         self.fer = Fernet(self.key)
         print(f'Your key is loaded!\nKey: {self.key}')
         self.update_key_label()
-
+        self.create_tag()
 
     def update_key_label(self):
         short_key = self.key_name.split('/')
@@ -161,14 +162,21 @@ class File_encryptor(ttk.Frame):
             mark_name = str(file_path + '/' + mark + short_name)
             os.rename(filename, mark_name)
 
+    def create_tag(self):
+        self.tag_code = ''
+        string_key = str(self.key)
+        for i, value in enumerate(string_key):
+            if (i%5) == 0:
+                self.tag_code += value 
+        print(self.tag_code)
+            
 
     def tag(self):
-        # self.tag_message = 'ENCRYPTED'
         for filename in self.filenames:
             file = open(filename, 'r+')
             file_data = file.read() 
             file.seek(0, 0)
-            file.write(self.tag_message + '\n' + file_data)
+            file.write(f"ENCRYPTED\n{self.tag_code}\n{file_data}")
             file.close
 
 
@@ -184,35 +192,51 @@ class File_encryptor(ttk.Frame):
 
     def untag(self):
         for filename in self.filenames:
-            file =  open(filename, 'r+')
+            file =  open(filename, 'rb+')
             lines = file.readlines()
             file.seek(0)
             file.truncate()
-            file.writelines(lines[1:])
+            file.writelines(lines[2:])
 
 
     def tag_checker(self):
         for filename in self.filenames:
-            file = open(filename, 'r')
-            first_line = file.readline().strip() # todo add to read binary
-            if first_line == self.tag_message:
-                raise Exception("File is already encrypted!")
+            file = open(filename, 'rb')
+            two_lines = file.readlines()[0:2]
+            first = two_lines[0].strip()
+            second = two_lines[1].strip()
+            tag_code = f"b'{self.tag_code}'"
+            tag_encrypted = f"b'{self.tag_encrypted}'"
+
+            if str(first) == tag_encrypted:
+                if str(second) == tag_code:
+                    raise Exception("File is already encrypted!")
+                else:
+                    raise Exception("File is encrypted with different key!")
             else:
                 continue
 
     def untag_checker(self):
         for filename in self.filenames:
-            file = open(filename, 'r')
-            first_line = file.readline().strip()
-            if first_line == self.tag_message:
-                continue
+            file = open(filename, 'rb')
+            two_lines = file.readlines()[0:2]
+            first = two_lines[0].strip()
+            second = two_lines[1].strip()
+            tag_code = f"b'{self.tag_code}'"
+            tag_encrypted = f"b'{self.tag_encrypted}'"
+
+            if str(first) == tag_encrypted:
+                if str(second) == tag_code:
+                    continue
+                else:
+                    raise Exception("File is encrypted with different key!")
             else:
                 raise Exception("File is not encrypted!")
 
     
     def encrypt_file(self):
         start = time.time()
-        self.tag_message = 'ENCRYPTED' # todo tag_massage based on key
+        self.create_tag()
         self.tag_checker()
         print(f'encrypt key --> {self.key}')
         for filename in self.filenames:
@@ -232,7 +256,6 @@ class File_encryptor(ttk.Frame):
  
     def decrypt_file(self):
         start = time.time()
-        self.tag_message = 'ENCRYPTED' # todo tag_massage based on key
         self.untag_checker()
         self.untag()
         print(f'encrypt key --> {self.key}')
