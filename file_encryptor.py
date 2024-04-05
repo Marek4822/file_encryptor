@@ -3,13 +3,14 @@ from tkinter import filedialog
 from cryptography.fernet import Fernet
 import os
 import time
+from threading import Thread
 
 class App():
     def __init__(self) -> None:
         super().__init__()
         self = ttk.Window(
             title='File encryptor',
-            size=(400, 500),
+            size=(500, 600),
             themename='darkly',
             # resizable=(False, False)
         )
@@ -25,13 +26,15 @@ class File_encryptor(ttk.Frame):
         self.function_ui = False
         self.function_ui_key = False
         self.is_checked = False
+        self.isfinished = False
+
         self.tag_encrypted = 'ENCRYPTED'
         self.widgets()
         
 
     def widgets(self):
         self.columnconfigure((0, 1, 2, 3), weight=1, uniform='a')
-        self.rowconfigure((0, 1, 2, 3, 4, 5, 6, 7), weight=1, uniform='a')
+        self.rowconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8), weight=1, uniform='a')
         
         title_label = ttk.Label(self, text='ENCRYPTOR', font='arial 30') # title label
         open_bttn = ttk.Button(self, text='Open file', command=lambda: [self.handle_open_files()]) # button
@@ -41,19 +44,21 @@ class File_encryptor(ttk.Frame):
         open_bttn.grid(row=1, column=0, sticky='ewn', columnspan=2, padx=10) # grid button
         key_bttn.grid(row=1, column=2, sticky='ewn', columnspan=2, padx=10) # grid button
         title_label.grid(row=0, column=0, sticky='', columnspan=4) # grid title
-        self.key_label.grid(row=7, column=0, sticky='w', columnspan=4) # grid key
+        self.key_label.grid(row=8, column=0, sticky='w', columnspan=4) # grid key
         
 
     def function_button(self):
         self.function_ui = True
-        self.encrypt_bttn = ttk.Button(self, text='Encrypt files', command=lambda: [self.encrypt_file()]) # button
-        self.decrypt_bttn = ttk.Button(self, text='Decrypt files', command=lambda: [self.decrypt_file()]) # button
+        self.encrypt_bttn = ttk.Button(self, text='Encrypt files', command=lambda: [self.encrypt_threading()]) # button
+        self.decrypt_bttn = ttk.Button(self, text='Decrypt files', command=lambda: [self.decrypt_threading()]) # button
         self.checkbox_var = ttk.IntVar()
         self.checkbox = ttk.Checkbutton(self, text='Do you want to encrypt/decrypt name?',variable=self.checkbox_var , onvalue=1, offvalue=0, command=self.checker) # checkbox
+        self.gauge = ttk.Floodgauge(self, bootstyle='info', mask='{}%', maximum=100, value=0, mode='determinate') # Floodgauge
 
         self.encrypt_bttn.grid(row=6, column=0, sticky='ewn', columnspan=2, padx=10) # grid button
         self.decrypt_bttn.grid(row=6, column=2, sticky='ewn', columnspan=2, padx=10) # grid button
         self.checkbox.grid(row=5, column=0, sticky='w', columnspan=4) # grid checkbox
+        self.gauge.grid(row=7, column=0, sticky='ew', columnspan=4) # grid Floodgauge
 
 
     def checker(self):
@@ -77,14 +82,15 @@ class File_encryptor(ttk.Frame):
 
 
     def destroy_function_buttons(self):
-        elements = self.scrollbar_text, self.scrollbar_ui, self.encrypt_bttn, self.decrypt_bttn, self.checkbox
+        elements = self.scrollbar_text, self.scrollbar_ui, self.encrypt_bttn, self.decrypt_bttn, self.checkbox, self.gauge
         for element in elements:
             element.destroy()
 
     def get_files(self):
         self.filenames = filedialog.askopenfilenames(
             title='Open a file',
-            initialdir='/',
+            # initialdir="/",
+            initialdir="C:\\Users\\marekbax\\Downloads\\encrypt",
             filetypes=(('All files', '*'),))
 
 
@@ -108,7 +114,7 @@ class File_encryptor(ttk.Frame):
     def scrollbar(self):
         self.scrollbar_text = ttk.Text(self, height=10)
         self.scrollbar_text.grid(row=2, column=0, sticky='nes', columnspan=4, rowspan=3)
-        self.scrollbar_ui = ttk.Scrollbar(self, orient='vertical', command=self.scrollbar_text.yview)
+        self.scrollbar_ui = ttk.Scrollbar(self, orient='vertical', command=self.scrollbar_text.yview, bootstyle="round")
         self.scrollbar_ui.grid(row=2, column=2, sticky='nes', columnspan=4, rowspan=3)
         self.scrollbar_text.config(yscrollcommand=self.scrollbar_ui.set)
 
@@ -235,12 +241,22 @@ class File_encryptor(ttk.Frame):
                     raise Exception("File is encrypted with different key!")
             else:
                 raise Exception("File is not encrypted!")
+            
+    def handle_gauge_stop(self):
+        self.gauge.stop()
+        self.gauge.configure(bootstyle='SUCCESS')
+        self.gauge.configure(value=100)
 
-    
+    def handle_gauge_start(self):
+        self.gauge.configure(bootstyle='INFO')
+        self.gauge.configure(value=0)
+        self.gauge.start()
+
     def encrypt_file(self):
         start = time.time()
         self.create_tag()
         self.tag_checker()
+        self.handle_gauge_start()
         print(f'encrypt key --> {self.key}')
         for filename in self.filenames:
             file = open(filename, 'rb')
@@ -254,14 +270,16 @@ class File_encryptor(ttk.Frame):
         self.tag()
         if self.is_checked:
             self.encrypt_name()
-        end = time.time()
-        print(round(end - start, 2), "sec")
+        self.end = time.time()
+        print(round(self.end - start, 2), "sec")
+        self.handle_gauge_stop()
 
- 
+
     def decrypt_file(self):
         start = time.time()
         self.untag_checker()
         self.untag()
+        self.handle_gauge_start()
         print(f'encrypt key --> {self.key}')
         for filename in self.filenames:
             file = open(filename, 'rb')
@@ -276,4 +294,13 @@ class File_encryptor(ttk.Frame):
             self.decrypt_name()
         end = time.time()
         print(round(end - start, 2), "sec")
+        self.handle_gauge_stop()
+
+    def encrypt_threading(self):
+        Thread(target = self.encrypt_file).start()
+    
+    def decrypt_threading(self):
+        Thread(target = self.decrypt_file).start()
+
 App()
+# TODOADD https://ttkbootstrap.readthedocs.io/en/latest/api/tooltip/, ADD  https://ttkbootstrap.readthedocs.io/en/latest/api/widgets/floodgauge/ ADD NOTIFICATIONS, AUTO KEY LOAD
